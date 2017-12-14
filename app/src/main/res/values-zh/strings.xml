@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">MyWeather</string>
+    <string name="welcome_1">欢迎使用Mini天气预报App</string>
+    <string name="welcome_2">在这里你可以查询最新的天气信息</string>
+    <string name="welcome_3">下面就开始体验吧</string>
+    <string name="welcome_4">开始体验</string>
+</resources>

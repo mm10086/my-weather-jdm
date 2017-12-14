@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.FragmentManager;
 
 import android.content.SharedPreferences;
+import android.icu.text.LocaleDisplayNames;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -26,7 +27,9 @@ import org.xmlpull.v1.XmlPullParserFactory;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
+import com.example.mm.bean.City;
 import com.example.mm.myweather.ForecastFragment;
+import com.example.mm.util.LocationUtil;
 import com.example.mm.bean.TodayWeather;
 import com.example.mm.bean.Forcast;
 import com.example.mm.util.NetUtil;
@@ -39,24 +42,44 @@ import com.example.mm.util.SetWeatherImage;
 public class MainActivity extends Activity implements View.OnClickListener {
     private static final int UPDATE_TODAY_WEATHER = 1;
     private ImageView mUpdateBtn;
+    private ImageView mLocationBtn;
     private ImageView mCitySelect;
     private TextView cityTv, timeTv, temperatureNowTv, humidityTv, weekTv, pmDataTv,
             pmQualityTv, temperatureTv, climateTv, windTv, city_name_Tv;
     private ImageView weatherImg, pmImg;
 
     private ForecastFragment forcastFragment;
+    private static Handler mHandler = null;
+    private LocationUtil locationUtil;
     //建立一个Handler，如果收到message，则调用函数天气更新信息
-    private Handler mHandler = new Handler() {
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case UPDATE_TODAY_WEATHER:
-                    updateTodayWeather((TodayWeather) msg.obj);
-                    break;
-                default:
-                    break;
+    private void initHandler() {
+        mHandler = new Handler() {
+            public void handleMessage(Message msg) {
+                switch (msg.what) {
+                    case UPDATE_TODAY_WEATHER:
+                        updateTodayWeather((TodayWeather) msg.obj);
+                        break;
+                    case LocationUtil.MESSAGE_GET_LOCATION_CODE:
+                        City city = (City)msg.obj;
+                        if(city != null){
+                            //城市已定位
+                            SharedPreferences preferences = getSharedPreferences("config", MODE_PRIVATE);
+                            SharedPreferences.Editor editor=preferences.edit();
+                            editor.putString("main_city_code", city.getNumber());
+                            editor.putString("main_city_name", city.getCity());
+                            editor.commit();
+                            queryWeatherCode(city.getNumber());
+                        }
+                        break;
+                    default:
+                        break;
+                }
             }
-        }
-    };
+        };
+    }
+    public static Handler getHandler(){
+        return mHandler;
+    }
 
     @Override
     //重写MainActivity的onCreate函数
@@ -66,6 +89,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
         //为主界面更新按钮设置点击事件
         mUpdateBtn = (ImageView) findViewById(R.id.title_update_btn);
         mUpdateBtn.setOnClickListener(this);
+        //为定位按钮设置点击事件
+        mLocationBtn = (ImageView) findViewById(R.id.title_location);
+        mLocationBtn.setOnClickListener(this);
         //检查网络状况
         if (NetUtil.getNetworkState(this) != NetUtil.NETWORN_NONE) {
             Log.d("myWeather", "网络OK");
@@ -86,6 +112,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
         //初始化主界面视图
         initView();
         initForcast();
+        initHandler();
+        this.locationUtil = new LocationUtil(this);
     }
     //初始化主界面视图函数
     void initView() {
@@ -127,6 +155,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
         if(view.getId() == R.id.title_city_manager) {
             Intent i = new Intent(MainActivity.this, SelectCity.class);
             startActivityForResult(i, 1);
+        }
+
+        if(view.getId() == R.id.title_location) {
+            locationUtil.getLocation();
         }
         //如果单击事件来自于城市更新按钮，则从SharedPreference中读取当前城市编码，并进行数据查询
         if (view.getId() == R.id.title_update_btn) {
@@ -364,11 +396,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
         weatherType = todayWeather.getType();
         weatherImg.setImageResource(SetWeatherImage.setImageByType(weatherType));
-        Log.d("myWeather", "update01");
         forcastFragment.setWeather(todayWeather);
-        Log.d("myWeather", "update02");
         forcastFragment.setForcastInfo();
-        Log.d("myWeather", "update03");
         Toast.makeText(MainActivity.this, "更新成功！", Toast.LENGTH_SHORT).show();
     }
 }
