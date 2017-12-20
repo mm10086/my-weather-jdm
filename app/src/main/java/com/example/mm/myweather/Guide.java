@@ -2,6 +2,7 @@ package com.example.mm.myweather;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.view.ViewPager;
@@ -29,17 +30,32 @@ public class Guide extends Activity implements ViewPager.OnPageChangeListener, V
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.guide);
+        setGuide();
         initViews();
         initDots();
         btn = (Button)views.get(2).findViewById(R.id.btn);
         btn.setOnClickListener(this);
     }
 
-    @Override
-    public void onClick(View view) {
+    private void setGuide() {
+        SharedPreferences preferences = getSharedPreferences("config1", MODE_PRIVATE);
+        String guideId = preferences.getString("guide", "1");
+        if(guideId.equals("0")) {
             Intent i = new Intent(Guide.this, MainActivity.class);
             startActivity(i);
             finish();
+        }
+    }
+
+    @Override
+    public void onClick(View view) {
+        SharedPreferences preferences = getSharedPreferences("config1", MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putString("guide", "0");
+        editor.commit();
+        Intent i = new Intent(Guide.this, MainActivity.class);
+        startActivity(i);
+        finish();
     }
 
     void initDots() {
@@ -50,6 +66,7 @@ public class Guide extends Activity implements ViewPager.OnPageChangeListener, V
     }
 
     private void initViews() {
+
         LayoutInflater inflater = LayoutInflater.from(this);
         views = new ArrayList<View>();
         views.add(inflater.inflate(R.layout.page1, null));

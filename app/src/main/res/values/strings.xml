@@ -4,4 +4,6 @@
     <string name="welcome_2">Here you can query the latest weather information</string>
     <string name="welcome_3">Now let\'s start!</string>
     <string name="welcome_4">Start</string>
+    <string name="appwidget_text">EXAMPLE</string>
+    <string name="add_widget">Add widget</string>
 </resources>

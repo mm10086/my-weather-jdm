@@ -115,6 +115,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
         initForcast();
         initHandler();
         this.locationUtil = new LocationUtil(this);
+        locationUtil.getLocation();
         startService(new Intent(getBaseContext(), NotifyService.class));
         Log.d("服务","开启");
     }
@@ -261,7 +262,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
             pmQualityTv.setText("无");
         } else { pmQualityTv.setText(todayWeather.getQuality()); }
         weekTv.setText(todayWeather.getDate());
-        temperatureTv.setText(todayWeather.getHigh() + "~" + todayWeather.getLow());
+        temperatureTv.setText(todayWeather.getLow() + "~" + todayWeather.getHigh());
         climateTv.setText(todayWeather.getType());
         windTv.setText("风力:" + todayWeather.getFengli());
         if (todayWeather.getPm25().equals("")) {
