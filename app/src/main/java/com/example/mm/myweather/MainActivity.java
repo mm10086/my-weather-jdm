@@ -29,12 +29,13 @@ import org.xmlpull.v1.XmlPullParserException;
 
 import com.example.mm.bean.City;
 import com.example.mm.myweather.ForecastFragment;
+import com.example.mm.service.NotifyService;
 import com.example.mm.util.LocationUtil;
 import com.example.mm.bean.TodayWeather;
 import com.example.mm.bean.Forcast;
 import com.example.mm.util.NetUtil;
 import com.example.mm.util.SetWeatherImage;
-
+import com.example.mm.util.WeatherUtil;
 /**
  * Created by mm on 2017/9/26.
  */
@@ -114,6 +115,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
         initForcast();
         initHandler();
         this.locationUtil = new LocationUtil(this);
+        startService(new Intent(getBaseContext(), NotifyService.class));
+        Log.d("服务","开启");
     }
     //初始化主界面视图函数
     void initView() {
@@ -219,7 +222,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
                     String responseStr = response.toString();
                     Log.d("myWeather", responseStr);
                     //调用parseXML函数解析读取的XML源码，获取关于天气的数据类
-                    todayWeather = parseXML(responseStr);
+                    todayWeather = WeatherUtil.parseXML(responseStr);
                     //如果读取并解析了天气信息，则向主线程发出一个更新天气的Message
                     if (todayWeather != null) {
                         Log.d("myWeather", todayWeather.toString());
@@ -239,135 +242,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
             }
         }).start();
     }
-    //XML解析函数，用于获取天气数据
-    private TodayWeather parseXML(String xmldata) {
-        TodayWeather todayWeather = new TodayWeather();
-        Log.d("myWeather", "parseXML00");
-        Forcast[] forcastArr = todayWeather.getForcastArr();
-        Log.d("myWeather", "parseXML01");
-        int fengxiangCount = -1;
-        int fengliCount = -1;
-        int dateCount = -1;
-        int highCount = -1;
-        int lowCount = -1;
-        int typeCount = 0;
-        try {
-            XmlPullParserFactory fac = XmlPullParserFactory.newInstance();
-            XmlPullParser xmlPullParser = fac.newPullParser();
-            xmlPullParser.setInput(new StringReader(xmldata));
-            int eventType = xmlPullParser.getEventType();
-            Log.d("myWeather", "parseXML");
-            while (eventType != XmlPullParser.END_DOCUMENT) {
-                switch (eventType) {
-                    case XmlPullParser.START_DOCUMENT:
-                        break;
-                    case XmlPullParser.START_TAG:
-                        if (xmlPullParser.getName().equals("resp")) {
-                            todayWeather = new TodayWeather();
-                            Log.d("MyWeather", todayWeather.toString());
-                        }
-                        if (todayWeather != null) {
-                            if (xmlPullParser.getName().equals("city")) {
-                                eventType = xmlPullParser.next();
-                                todayWeather.setCity(xmlPullParser.getText());
-                            } else if (xmlPullParser.getName().equals("updatetime")) {
-                                eventType = xmlPullParser.next();
-                                todayWeather.setUpdatetime(xmlPullParser.getText());
-                            } else if (xmlPullParser.getName().equals("shidu")) {
-                                eventType = xmlPullParser.next();
-                                todayWeather.setShidu(xmlPullParser.getText());
-                            } else if (xmlPullParser.getName().equals("wendu")) {
-                                eventType = xmlPullParser.next();
-                                todayWeather.setWendu(xmlPullParser.getText());
-                            } else if (xmlPullParser.getName().equals("pm25")) {
-                                eventType = xmlPullParser.next();
-                                todayWeather.setPm25(xmlPullParser.getText());
-                            } else if (xmlPullParser.getName().equals("quality")) {
-                                eventType = xmlPullParser.next();
-                                todayWeather.setQuality(xmlPullParser.getText());
-                            } else if(xmlPullParser.getName().equals("fengxiang")){
-                                fengxiangCount++;
-                                if(fengxiangCount == 0){
-                                    eventType = xmlPullParser.next();
-                                    todayWeather.setFengxiang(xmlPullParser.getText());
-                                }else{
-                                    if(fengxiangCount > 1 && fengxiangCount % 2 == 1){
-                                        eventType = xmlPullParser.next();
-                                        forcastArr[(fengxiangCount-1)/2 - 1].setFengxiang(xmlPullParser.getText());
-                                    }
-                                }
-                            } else if (xmlPullParser.getName().equals("fengli")) {
-                                fengliCount++;
-                                if (fengliCount == 0) {
-                                    eventType = xmlPullParser.next();
-                                    todayWeather.setFengli(xmlPullParser.getText());
-                                } else {
-                                    if (fengliCount > 1 && fengliCount % 2 == 1) {
-                                        eventType = xmlPullParser.next();
-                                        forcastArr[(fengliCount - 1) / 2 - 1].setFengli(xmlPullParser.getText());
-                                    }
-                                }
-                            } else if(xmlPullParser.getName().equals("date")){
-                                dateCount++;
-                                if(dateCount == 0){
-                                    eventType = xmlPullParser.next();
-                                    String dateStr = xmlPullParser.getText();
-                                    todayWeather.setDate(dateStr);
-                                }else{
-                                    eventType = xmlPullParser.next();
-                                    String dateStr2 = xmlPullParser.getText();
-                                    forcastArr[dateCount-1].setDate(dateStr2.substring(dateStr2.length() - 3,dateStr2.length()));
-                                }
-                            } else if(xmlPullParser.getName().equals("high")){
-                                highCount++;
-                                if(highCount == 0){
-                                    eventType = xmlPullParser.next();
-                                    String highStr = xmlPullParser.getText();
-                                    todayWeather.setHigh(highStr.split(" ")[1]);
-                                }else{
-                                    eventType = xmlPullParser.next();
-                                    String highStr2 = xmlPullParser.getText();
-                                    forcastArr[highCount-1].setHigh(highStr2.split(" ")[1]);
-                                }
-                            } else if(xmlPullParser.getName().equals("low")){
-                                lowCount++;
-                                if(lowCount == 0){
-                                    eventType = xmlPullParser.next();
-                                    String lowStr = xmlPullParser.getText();
-                                    todayWeather.setLow(lowStr.split(" ")[1]);
-                                }else{
-                                    eventType = xmlPullParser.next();
-                                    String lowStr2 = xmlPullParser.getText();
-                                    forcastArr[lowCount-1].setLow(lowStr2.split(" ")[1]);
-                                }
-                            } else if(xmlPullParser.getName().equals("type")) {
-                                typeCount++;
-                                if (typeCount == 1) {
-                                    eventType = xmlPullParser.next();
-                                    todayWeather.setType(xmlPullParser.getText());
-                                } else {
-                                    if (typeCount % 2 == 1) {
-                                        eventType = xmlPullParser.next();
-                                        forcastArr[(typeCount - 1) / 2 - 1].setType(xmlPullParser.getText());
-                                    }
-                                }
-                            }
-                        }
-                        break;
-                    case XmlPullParser.END_TAG:
-                        break;
-                }
-                eventType = xmlPullParser.next();
-            }
-        } catch (XmlPullParserException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        todayWeather.setForcastArr(forcastArr);
-        Log.d("myWeather", todayWeather.toString());
-        return todayWeather;
-    }
+
     //更新天气函数，主要用于更新主界面上的天气数据和图标
     void updateTodayWeather(TodayWeather todayWeather) {
         int pm25Num;

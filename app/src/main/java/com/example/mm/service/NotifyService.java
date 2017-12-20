@@ -15,6 +15,7 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
+import android.util.Log;
 
 import com.example.mm.myweather.R;
 
@@ -23,9 +24,8 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import com.example.mm.myweather.MainActivity;
-//import pku.ss.liudong.model.Weather;
-//import pku.ss.liudong.util.PinYin;
-//import pku.ss.liudong.util.WeatherUtil;
+import com.example.mm.bean.TodayWeather;
+import com.example.mm.util.WeatherUtil;
 
 public class NotifyService extends Service {
     private Timer[] timer = new Timer[3];
@@ -39,7 +39,6 @@ public class NotifyService extends Service {
         int year = c.get(Calendar.YEAR);
         int month = c.get(Calendar.MONTH);
         int day = c.get(Calendar.DAY_OF_MONTH);
-
 
         Calendar c1 = Calendar.getInstance();
         long[] trigMillis = new long[3];
@@ -57,11 +56,11 @@ public class NotifyService extends Service {
             timer[i].schedule(new TimerTask() {
                 public void run() {
                     //拿到citycode
-                    SharedPreferences sp = getSharedPreferences(MainActivity.SETTING_CONFIG, MODE_PRIVATE);
-                    String cityCode = sp.getString(WeatherActivity.MAIN_CITY_CODE, "101010100");
+                    SharedPreferences sp = getSharedPreferences("config", MODE_PRIVATE);
+                    String cityCode = sp.getString("main_city_code", "101010100");
                     WeatherUtil weatherUtil = new WeatherUtil(cityCode);
-                    Weather weather = weatherUtil.getWeather();
-                    String weatherInfo = weather.getWeatherTypeString() + " " + weather.getWendu() + "℃  空气质量:" + weather.getAqi();
+                    TodayWeather weather = weatherUtil.getWeather();
+                    String weatherInfo = weather.getType() + " " + weather.getWendu() + "℃  空气质量:" + weather.getQuality();
 
                     NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
                     NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(NotifyService.this);
@@ -71,6 +70,7 @@ public class NotifyService extends Service {
                     //mBuilder.setSmallIcon(PinYin.getWeatherImageResourceId(weather.getTypeDay()));    //应该根据白天夜晚分别判断
                     mBuilder.setSmallIcon(R.drawable.weather_icon);
                     nm.notify(0, mBuilder.build());
+                    Log.d("定时器", "zhix");
                 }
                 //}, trigMillis[i], 24 * 60 * 60 * 1000);
             }, 0, 10000);//测试0, 1000);
